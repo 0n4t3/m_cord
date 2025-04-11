@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>m_cord</title> <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0c0413">
+
+    <style>
+      /* Basic styles from n_cord, Lucide removed */
+      .hamburger { display: inline-block; cursor: pointer; }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: #231b2e; }
+      ::-webkit-scrollbar-thumb { background: #120b1c; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #0b0610; }
+
+      html, body {
+          height: 100vh;
+          overflow: hidden; /* Prevent body scroll */
+      }
+      body {
+          display: flex;
+          flex-direction: column;
+          font-family: 'Inter', sans-serif; /* Assuming Inter font is available or falls back */
+          background-color: #0c0413;
+          color: #b9f155;
+      }
+      .message {
+          border-left: 2px solid transparent;
+          transition: background-color 0.1s ease-in-out, border-left-color 0.1s ease-in-out;
+      }
+      .message:hover {
+          background-color: #1a0d27;
+          border-left-color: #9147ff;
+      }
+      .avatar {
+          background-color: #9147ff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          color: white;
+      }
+      #messageInput, #serverUrlInput, #accessTokenInput, #addHashtagInput {
+          background-color: #1a0d27;
+          color: #b9f155;
+          border-radius: 8px;
+          border: 1px solid #231b2e;
+      }
+      #messageInput::placeholder, #serverUrlInput::placeholder, #accessTokenInput::placeholder, #addHashtagInput::placeholder {
+          color: #6e548e;
+      }
+      #messageInput:focus, #serverUrlInput:focus, #accessTokenInput:focus, #addHashtagInput:focus {
+           outline: none;
+           border-color: #9147ff;
+           box-shadow: 0 0 0 2px rgba(145, 71, 255, 0.5);
+      }
+      button {
+          transition: background-color 0.2s ease;
+          border-radius: 8px;
+      }
+      .btn-primary { background-color: #9147ff; color: white; }
+      .btn-primary:hover { background-color: #7e37d8; }
+      .btn-secondary { background-color: #3a3a3c; color: white; }
+      .btn-secondary:hover { background-color: #4a4a4c; }
+      .btn-danger { background-color: #ef4444; color: white; }
+      .btn-danger:hover { background-color: #dc2626; }
+      .modal { background-color: rgba(0, 0, 0, 0.8); }
+      .modal-content { background-color: #120b1c; border-radius: 8px; }
+      .warning-text {
+          color: #f7b903; font-size: 0.875rem;
+          background-color: rgba(247, 185, 3, 0.1);
+          border-left: 4px solid #f7b903; padding: 8px;
+          border-radius: 4px; margin-bottom: 1rem;
+      }
+      .channel-item {
+          cursor: pointer; padding: 6px 12px; border-radius: 6px;
+          transition: background-color 0.15s ease; display: flex;
+          align-items: center; gap: 8px;
+      }
+      .channel-item:hover { background-color: #2a1d3a; }
+      .channel-item.active { background-color: #3f2b55; color: #ffffff; font-weight: 500; }
+      .channel-item span:first-child { flex-shrink: 0; } /* Keep icon size */
+      .channel-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .loading-messages { color: #6e548e; white-space: nowrap; }
+      .dropdown { position: relative; display: inline-block; }
+      .dropdown-content {
+          display: none; position: absolute; background-color: #1a0d27;
+          min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+          z-index: 10; border-radius: 6px; border: 1px solid #231b2e;
+          padding: 4px 0; right: 0; top: 100%; margin-top: 4px;
+      }
+      .dropdown-content button {
+          color: #b9f155; padding: 8px 16px; text-decoration: none;
+          display: block; width: 100%; text-align: left;
+          background: none; border: none; font-size: 0.875rem;
+      }
+      .dropdown-content button:hover { background-color: #2a1d3a; }
+      .dropdown:hover .dropdown-content { display: block; }
+
+        /* About dropdown styling */
+        .about-dropdown { position: relative; display: inline-block; }
+        .about-dropdown-content {
+            display: none; position: absolute;
+            background-color: #1a0d27; min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+            z-index: 10; border-radius: 6px;
+            border: 1px solid #231b2e; padding: 4px 0; margin-top: 0;
+            right: 0; /* Align to the right */ top: 100%; /* Position below button */
+            margin-top: 4px;
+        }
+        .about-dropdown:hover .about-dropdown-content { display: block; }
+        .about-dropdown-content.show { display: block; }
+        </style>
+</head>
+<body>
+    <header class="bg-[#1a0d27] p-2 md:p-3 shadow-md flex justify-between items-center text-white flex-shrink-0">
+        <div id="toggleSidebarBtn" class="hamburger md:hidden p-2 mr-2" title="Toggle Sidebar">
+          <div class="w-6 h-0.5 bg-white my-1"></div>
+          <div class="w-6 h-0.5 bg-white my-1"></div>
+          <div class="w-6 h-0.5 bg-white my-1"></div>
+        </div>
+
+        <div class="flex items-center space-x-2 flex-1">
+             <span id="channelIcon" class="text-xl text-[#b9f155]">🏠</span> <h1 id="channelTitle" class="text-xl font-bold">Home</h1>
+             <div class="about-dropdown">
+                <button id="aboutButton" class="p-2 rounded-full hover:bg-gray-700" title="About m_cord">
+                    ⚙️
+                </button>
+                <div id="aboutDropdownContent" class="about-dropdown-content" >
+                    <button id="aboutLink" class="block text-white px-4 py-2 hover:bg-gray-700">About</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button id="manageServerBtn" class="p-2 rounded-full hover:bg-gray-700" title="Manage Server">
+                ⇆ </button>
+            <div id="connectionStatusContainer" class="flex items-center space-x-1 text-xs text-gray-400" title="Server Connection Status">
+                <span id="connectionIcon">?</span> <span id="connectionStatus">No Server</span>
+            </div>
+            <div id="userInfo" class="flex items-center space-x-2 hidden ml-2">
+                <img id="userAvatar" src="https://placehold.co/40x40/9147ff/ffffff?text=?" alt="User Avatar" class="w-8 h-8 rounded-full object-cover avatar">
+                <span id="userName" class="text-sm font-medium">Not Logged In</span>
+                <button id="logoutBtn" class="p-1 rounded-full hover:bg-red-700 text-xs btn-danger" title="Logout">
+                    <span>X</span> </button>
+            </div>
+            <div id="loginOptions" class="flex items-center space-x-2">
+                 <button id="loginBtn" class="btn-primary font-bold py-2 px-4 rounded-lg shadow text-sm">
+                    Login
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside id="sidebar" class="w-64 bg-[#1a0d27] p-4 overflow-y-auto flex-shrink-0 flex flex-col md:flex">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Timelines</h2>
+            <nav id="timelineList" class="space-y-1 mb-4">
+                <div id="timeline-home" class="channel-item active" onclick="selectTimeline('home')">
+                    <span>🏠</span> <span>Home</span>
+                </div>
+                 <div id="timeline-local" class="channel-item" onclick="selectTimeline('local')">
+                    <span>🏢</span> <span>Local</span>
+                </div>
+                 <div id="timeline-federated" class="channel-item" onclick="selectTimeline('federated')">
+                    <span>🌐</span> <span>Federated</span>
+                </div>
+            </nav>
+
+            <h2 class="text-lg font-semibold mb-4 text-gray-300 border-t border-gray-700 pt-4">Channels</h2>
+             <nav id="channelList" class="space-y-1 mb-4 flex-1">
+                 </nav>
+
+            <div class="mt-auto pt-4 border-t border-gray-700">
+                 <label for="addHashtagInput" class="block text-sm font-medium text-gray-400 mb-1">Add Channel</label>
+                 <div class="flex space-x-2">
+                    <input type="text" id="addHashtagInput" class="flex-1 px-3 py-1.5 text-sm" placeholder="e.g., mastodon">
+                    <button id="addHashtagBtn" class="btn-primary p-2" title="Add Hashtag">
+                        +
+                    </button>
+                 </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col bg-[#0c0413] overflow-hidden">
+            <div class="px-4 pt-2 pb-1 border-b border-gray-700 flex justify-end">
+            </div>
+
+            <div id="messageContainer" class="flex-1 overflow-y-auto p-4 flex flex-col-reverse">
+                <div class="text-center text-gray-500 pt-10 loading-messages">Please login or configure server.</div>
+            </div>
+            <div class="bg-[#1a0d27] p-2 md:p-4 flex items-center flex-shrink-0 border-t border-gray-700">
+                <input type="text" id="messageInput" class="flex-1 px-4 py-2 mr-3 focus:outline-none" placeholder="Type your message..." disabled>
+                <button id="sendBtn" class="btn-primary font-bold py-2 px-4 rounded-lg shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center" disabled>
+                    <span class="ml-1">Send</span>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <div id="serverManagementModal" class="fixed inset-0 z-50 flex items-center justify-center modal hidden">
+        <div class="modal-content p-6 rounded-lg shadow-xl w-full max-w-lg">
+            <h2 class="text-2xl font-bold mb-4 text-white">Server Configuration</h2>
+            <div class="mb-4">
+                <label for="serverUrlInput" class="block text-sm font-medium text-gray-300 mb-1">Mastodon Server URL</label>
+                <input type="url" id="serverUrlInput" class="w-full p-2 rounded focus:outline-none" placeholder="e.g., https://mastodon.social">
+                 <p class="text-xs text-gray-400 mt-1">The base URL of your Mastodon instance.</p>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancelServerBtn" class="btn-secondary py-2 px-4 rounded-lg">Cancel</button>
+                <button id="saveServerBtn" class="btn-primary py-2 px-4 rounded-lg">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center modal hidden">
+        <div class="modal-content p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4 text-white">Login to Mastodon</h2>
+            <div class="mb-4">
+                 <label for="loginServerUrlDisplay" class="block text-sm font-medium text-gray-300 mb-1">Server</label>
+                 <input type="text" id="loginServerUrlDisplay" class="w-full p-2 rounded bg-[#2a1d3a] border border-gray-600 text-gray-400" readonly>
+                 <button id="changeServerBtn" class="text-xs text-blue-400 hover:underline mt-1">Change Server</button>
+            </div>
+            <div class="warning-text">
+                <strong>Access Token Required:</strong> You need to generate an Access Token in your Mastodon account settings (Development -> New Application). Grant `read` and `write` scopes.
+            </div>
+            <div class="mb-4">
+                <label for="accessTokenInput" class="block text-sm font-medium text-gray-300 mb-1">Access Token</label>
+                <input type="password" id="accessTokenInput" class="w-full p-2 rounded focus:outline-none" placeholder="Paste your Access Token here">
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancelLoginBtn" class="btn-secondary py-2 px-4 rounded-lg">Cancel</button>
+                <button id="submitLoginBtn" class="btn-primary py-2 px-4 rounded-lg">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorDisplay" class="fixed bottom-4 right-4 bg-red-700 text-white p-3 rounded-lg shadow-lg hidden z-60 max-w-sm">
+        <div class="flex justify-between items-center">
+            <span id="errorMessage" class="text-sm"></span>
+            <button onclick="document.getElementById('errorDisplay').classList.add('hidden')" class="ml-2 font-bold text-lg leading-none">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Constants and State ---
+        let mastodonServer = null; // e.g., "https://mastodon.social"
+        let mastodonAccessToken = null;
+        let mastodonUserInfo = null; // Store user's account info from verify_credentials
+        let currentTimeline = 'home'; // 'home', 'local', 'federated', or '#hashtag'
+        let subscribedHashtags = []; // Array<string> - Locally tracked hashtags
+        let timelineCache = new Map(); // Cache statuses per timeline Map<timelineKey, Array<status>>
+        let accountCache = new Map(); // Cache account details Map<accountId, accountInfo>
+        let oldestStatusId = null; // For pagination (fetching older posts)
+        let newestStatusId = null; // For pagination (fetching newer posts)
+
+        // --- DOM Elements ---
+        const messageContainer = document.getElementById('messageContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginOptions = document.getElementById('loginOptions');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userInfo = document.getElementById('userInfo');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const connectionStatusContainer = document.getElementById('connectionStatusContainer');
+        const connectionIcon = document.getElementById('connectionIcon'); // Span for emoji
+        const connectionStatus = document.getElementById('connectionStatus');
+        const manageServerBtn = document.getElementById('manageServerBtn');
+        const serverManagementModal = document.getElementById('serverManagementModal');
+        const serverUrlInput = document.getElementById('serverUrlInput');
+        const saveServerBtn = document.getElementById('saveServerBtn');
+        const cancelServerBtn = document.getElementById('cancelServerBtn');
+        const loginModal = document.getElementById('loginModal');
+        const loginServerUrlDisplay = document.getElementById('loginServerUrlDisplay');
+        const changeServerBtn = document.getElementById('changeServerBtn');
+        const accessTokenInput = document.getElementById('accessTokenInput');
+        const submitLoginBtn = document.getElementById('submitLoginBtn');
+        const cancelLoginBtn = document.getElementById('cancelLoginBtn');
+        const errorDisplay = document.getElementById('errorDisplay');
+        const errorMessage = document.getElementById('errorMessage');
+        const timelineList = document.getElementById('timelineList'); // For Home/Local/Fed
+        const channelList = document.getElementById('channelList'); // For Hashtags
+        const addHashtagInput = document.getElementById('addHashtagInput');
+        const addHashtagBtn = document.getElementById('addHashtagBtn');
+        const channelIcon = document.getElementById('channelIcon'); // Span for emoji
+        const channelTitle = document.getElementById('channelTitle');
+        const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+        const aboutButton = document.getElementById('aboutButton');
+        const aboutLink = document.getElementById('aboutLink');
+        const aboutDropdownContent = document.getElementById('aboutDropdownContent');
+
+        // --- Storage Keys ---
+        const STORAGE_KEY_SERVER = 'mastodonServerUrl';
+        const STORAGE_KEY_TOKEN = 'mastodonAccessToken';
+        const STORAGE_KEY_HASHTAGS = 'mastodonHashtags';
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("m_cord initializing...");
+            loadDataFromStorage();
+            updateServerStatusUI();
+            updateHashtagListUI();
+            setupEventListeners();
+            updateAboutLink(); // Set the correct GitHub link
+
+            if (mastodonServer && mastodonAccessToken) {
+                console.log("Found server and token, attempting to verify credentials...");
+                verifyCredentials(); // Attempt login if token exists
+            } else if (mastodonServer) {
+                console.log("Found server, but no token.");
+                // Optionally prompt to login
+            } else {
+                console.log("No server configured.");
+                showError("Please configure your Mastodon server URL first.", true);
+                openServerModal(); // Prompt user to set server
+            }
+
+            updateActiveTimelineHighlight();
+            updateChannelHeader();
+        });
+
+        function setupEventListeners() {
+            loginBtn.addEventListener('click', openLoginModal);
+            logoutBtn.addEventListener('click', logout);
+            sendBtn.addEventListener('click', sendPost);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPost(); }
+            });
+            manageServerBtn.addEventListener('click', openServerModal);
+            cancelServerBtn.addEventListener('click', closeServerModal);
+            saveServerBtn.addEventListener('click', saveServer);
+            serverUrlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') saveServer(); });
+            cancelLoginBtn.addEventListener('click', closeLoginModal);
+            submitLoginBtn.addEventListener('click', loginWithToken);
+            accessTokenInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginWithToken(); });
+            changeServerBtn.addEventListener('click', () => { closeLoginModal(); openServerModal(); });
+            addHashtagBtn.addEventListener('click', addHashtag);
+            toggleSidebarBtn.addEventListener('click', toggleSidebar);
+
+            // About link functionality
+            let aboutDropdownOpen = false;
+            aboutLink.addEventListener('click', () => {
+                window.open('https://github.com/0n4t3/m_cord', '_blank'); // Updated URL
+            });
+            aboutButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent event from bubbling up
+                aboutDropdownOpen = !aboutDropdownOpen;
+                if (aboutDropdownOpen) {
+                    aboutDropdownContent.classList.add('show');
+                } else {
+                    aboutDropdownContent.classList.remove('show');
+                }
+            });
+            document.addEventListener('click', () => {
+                aboutDropdownContent.classList.remove('show');
+            });
+            
+            // Load older posts when scrolling to the top
+            messageContainer.addEventListener('scroll', () => {
+                if (messageContainer.scrollTop === 0) {
+                    fetchTimeline(currentTimeline, false, true); // Load older posts
+                } });
+        }
+
+        function updateAboutLink() {
+            // The link itself is handled in the event listener now
+            // We could set the href here, but click listener is more robust
+            // aboutLink.href = 'https://github.com/0n4t3/m_cord';
+        }
+
+        // --- Error Handling ---
+        function showError(message, isInfo = false) {
+            console.error("Error:", message);
+            errorMessage.textContent = message;
+            errorDisplay.classList.remove('hidden');
+            errorDisplay.classList.toggle('bg-red-700', !isInfo);
+            errorDisplay.classList.toggle('bg-blue-600', isInfo); // Use blue for info messages
+            // Auto-hide after 7 seconds
+            setTimeout(() => {
+                 // Check if the message is still the same before hiding
+                 if (errorMessage.textContent === message) {
+                     errorDisplay.classList.add('hidden');
+                 }
+            }, 7000);
+        }
+
+        // --- Storage ---
+        function loadDataFromStorage() {
+            mastodonServer = localStorage.getItem(STORAGE_KEY_SERVER);
+            mastodonAccessToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+            const storedHashtags = localStorage.getItem(STORAGE_KEY_HASHTAGS);
+            subscribedHashtags = storedHashtags ? JSON.parse(storedHashtags) : [];
+            if (!Array.isArray(subscribedHashtags)) {
+                subscribedHashtags = [];
+                saveHashtagsToStorage();
+            }
+            console.log("Loaded from storage - Server:", mastodonServer ? "Yes" : "No", "Token:", mastodonAccessToken ? "Yes" : "No", "Hashtags:", subscribedHashtags.length);
+        }
+
+        function saveServerToStorage() {
+            if (mastodonServer) {
+                localStorage.setItem(STORAGE_KEY_SERVER, mastodonServer);
+            } else {
+                localStorage.removeItem(STORAGE_KEY_SERVER);
+            }
+        }
+
+        function saveTokenToStorage() {
+            if (mastodonAccessToken) {
+                localStorage.setItem(STORAGE_KEY_TOKEN, mastodonAccessToken);
+            } else {
+                localStorage.removeItem(STORAGE_KEY_TOKEN);
+            }
+        }
+
+        function saveHashtagsToStorage() {
+            localStorage.setItem(STORAGE_KEY_HASHTAGS, JSON.stringify(subscribedHashtags));
+        }
+
+        // --- Mastodon API Helper ---
+        async function mastodonApiRequest(endpoint, method = 'GET', body = null) {
+            if (!mastodonServer || !mastodonAccessToken) {
+                throw new Error("Server URL or Access Token is missing.");
+            }
+
+            const url = mastodonServer.endsWith('/')
+                      ? `${mastodonServer}api/v1/${endpoint}`
+                      : `${mastodonServer}/api/v1/${endpoint}`;
+
+            const headers = {
+                'Authorization': `Bearer ${mastodonAccessToken}`,
+            };
+            const options = {
+                method: method,
+                headers: headers,
+            };
+
+            if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+                options.body = JSON.stringify(body);
+                headers['Content-Type'] = 'application/json';
+            }
+
+            console.log(`API Request: ${method} ${url}`, body ? body : ''); // Log request
+
+            try {
+                const response = await fetch(url, options);
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch (e) {
+                        errorData = { error: `HTTP error! Status: ${response.status} ${response.statusText}` };
+                    }
+                    console.error("API Error Response:", errorData);
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+                }
+
+                // Handle cases with no content response (e.g., successful POST/DELETE)
+                if (response.status === 204 || response.headers.get('content-length') === '0') {
+                    return null; // Or return { success: true }
+                }
+
+                // Check for pagination headers (Link header)
+                const linkHeader = response.headers.get('Link');
+                let pagination = {};
+                if (linkHeader) {
+                    const links = linkHeader.split(',');
+                    links.forEach(link => {
+                        const match = link.match(/<(.*?)>; rel="(.*?)"/);
+                        if (match) {
+                            const urlParams = new URLSearchParams(match[1].split('?')[1]);
+                            if (match[2] === 'next') {
+                                pagination.next = urlParams.get('max_id');
+                            } else if (match[2] === 'prev') {
+                                pagination.prev = urlParams.get('since_id');
+                            }
+                        }
+                    });
+                }
+
+                const data = await response.json();
+                // Attach pagination info to the data if needed, or handle globally
+                 if (Array.isArray(data)) {
+                     // Store pagination IDs globally for simplicity here
+                     oldestStatusId = pagination.next; // 'next' link in header points to older posts (max_id)
+                     newestStatusId = pagination.prev; // 'prev' link points to newer posts (since_id)
+                     // console.log("Pagination IDs:", { oldest: oldestStatusId, newest: newestStatusId });
+                 }
+
+                return data;
+
+            } catch (error) {
+                console.error(`API Request Failed: ${method} ${url}`, error);
+                // More specific error handling can be added here
+                throw error; // Re-throw the error to be caught by the calling function
+            }
+        }
+
+
+        // --- Login / Logout ---
+        function openLoginModal() {
+            if (!mastodonServer) {
+                showError("Please set your Mastodon server URL first.", true);
+                openServerModal();
+                return;
+            }
+            loginServerUrlDisplay.value = mastodonServer;
+            accessTokenInput.value = ''; // Clear previous input
+            loginModal.classList.remove('hidden');
+            accessTokenInput.focus();
+        }
+
+        function closeLoginModal() {
+            loginModal.classList.add('hidden');
+        }
+
+        async function loginWithToken() {
+            const token = accessTokenInput.value.trim();
+            if (!token) {
+                showError("Please enter your Access Token.");
+                return;
+            }
+
+            mastodonAccessToken = token; // Temporarily set token for verification
+            submitLoginBtn.disabled = true;
+            submitLoginBtn.textContent = 'Verifying...';
+
+            try {
+                await verifyCredentials(); // This will fetch user info and update UI on success
+                saveTokenToStorage(); // Save token only after successful verification
+                closeLoginModal();
+            } catch (error) {
+                mastodonAccessToken = null; // Clear token on failure
+                showError(`Login failed: ${error.message}`);
+            } finally {
+                 submitLoginBtn.disabled = false;
+                 submitLoginBtn.textContent = 'Login';
+            }
+        }
+
+        async function verifyCredentials() {
+            console.log("Verifying credentials...");
+            try {
+                const accountInfo = await mastodonApiRequest('accounts/verify_credentials');
+                if (accountInfo && accountInfo.id) {
+                    handleLoginSuccess(accountInfo);
+                } else {
+                    throw new Error("Received invalid account info from server.");
+                }
+            } catch (error) {
+                // Clear potentially invalid token and user info
+                mastodonAccessToken = null;
+                mastodonUserInfo = null;
+                saveTokenToStorage(); // Remove invalid token
+                updateLoginUI(); // Revert UI to logged-out state
+                console.error("Credential verification failed:", error);
+                showError(`Authentication failed: ${error.message}. Please check server URL and token.`);
+                throw error; // Re-throw so calling functions know it failed
+            }
+        }
+
+        function handleLoginSuccess(accountInfo) {
+            console.log("Login successful:", accountInfo);
+            mastodonUserInfo = accountInfo;
+            accountCache.set(accountInfo.id, accountInfo); // Cache own profile
+
+            updateLoginUI(); // Show user info, hide login button
+            updateUserProfileUI();
+
+            // Enable posting
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+
+            // Fetch initial timeline (Home)
+            currentTimeline = 'home';
+            updateActiveTimelineHighlight();
+            updateChannelHeader();
+            fetchTimeline(currentTimeline, true); // Force refresh on login
+
+            // TODO: Fetch followed tags and merge with local ones (optional enhancement)
+            // fetchFollowedTags();
+        }
+
+        function logout() {
+            console.log("Logging out...");
+            mastodonServer = null; // Clear server on logout? Or keep it? Let's keep it for now.
+            mastodonAccessToken = null;
+            mastodonUserInfo = null;
+            timelineCache.clear();
+            accountCache.clear();
+            oldestStatusId = null;
+            newestStatusId = null;
+
+            // Clear stored token, keep server and hashtags
+            localStorage.removeItem(STORAGE_KEY_TOKEN);
+
+            updateLoginUI(); // Show login button, hide user info
+            updateUserProfileUI(); // Clear user display
+            updateServerStatusUI(); // Update server status display
+
+            // Disable posting
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            messageInput.value = '';
+
+            // Clear message container and show login prompt
+            messageContainer.innerHTML = '<div class="text-center text-gray-500 pt-10">Logged out. Please login.</div>';
+
+            // Reset to home timeline visually
+            currentTimeline = 'home';
+            updateActiveTimelineHighlight();
+            updateChannelHeader();
+
+            showError("Logged out successfully.", true);
+        }
+
+        function updateLoginUI() {
+            const isLoggedIn = !!(mastodonUserInfo && mastodonAccessToken);
+            loginOptions.classList.toggle('hidden', isLoggedIn);
+            userInfo.classList.toggle('hidden', !isLoggedIn);
+        }
+
+        function updateUserProfileUI() {
+            if (mastodonUserInfo) {
+                userName.textContent = mastodonUserInfo.display_name || mastodonUserInfo.username;
+                userName.title = `@${mastodonUserInfo.acct}`; // Show full account@domain on hover
+                userAvatar.src = mastodonUserInfo.avatar_static || `https://placehold.co/40x40/9147ff/ffffff?text=${(mastodonUserInfo.username || '?').substring(0, 1)}`;
+                userAvatar.onerror = () => { userAvatar.src = `https://placehold.co/40x40/9147ff/ffffff?text=?`; };
+            } else {
+                userName.textContent = "Not Logged In";
+                userName.title = "";
+                userAvatar.src = `https://placehold.co/40x40/9147ff/ffffff?text=?`;
+            }
+        }
+
+
+        // --- Server Management ---
+        function openServerModal() {
+            serverUrlInput.value = mastodonServer || '';
+            serverManagementModal.classList.remove('hidden');
+            serverUrlInput.focus();
+        }
+
+        function closeServerModal() {
+            serverManagementModal.classList.add('hidden');
+        }
+
+        function saveServer() {
+            let url = serverUrlInput.value.trim();
+            if (!url) {
+                showError("Server URL cannot be empty.");
+                return;
+            }
+            // Basic validation: ensure it starts with http:// or https://
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                showError("Invalid URL. Must start with http:// or https://");
+                return;
+            }
+            // Remove trailing slash for consistency
+            if (url.endsWith('/')) {
+                url = url.slice(0, -1);
+            }
+
+            if (url !== mastodonServer) {
+                console.log("Server URL changed to:", url);
+                mastodonServer = url;
+                saveServerToStorage();
+                // Invalidate token and user info as they belong to the old server
+                mastodonAccessToken = null;
+                mastodonUserInfo = null;
+                saveTokenToStorage(); // Remove token for old server
+                timelineCache.clear();
+                accountCache.clear();
+                updateLoginUI();
+                updateUserProfileUI();
+                messageContainer.innerHTML = '<div class="text-center text-gray-500 pt-10">Server changed. Please login.</div>';
+                showError("Server URL updated. Please login to the new server.", true);
+            } else {
+                 console.log("Server URL unchanged.");
+            }
+
+            updateServerStatusUI();
+            closeServerModal();
+            // If not logged in after saving, prompt login
+            if (!mastodonAccessToken) {
+                 openLoginModal();
+            }
+        }
+
+        function updateServerStatusUI() {
+            if (mastodonServer) {
+                connectionStatus.textContent = mastodonServer.replace(/^https?:\/\//, ''); // Show domain
+                connectionStatusContainer.title = `Connected to: ${mastodonServer}`;
+                connectionIcon.textContent = '✔️'; // Simple checkmark for configured
+                connectionStatusContainer.classList.remove('text-red-400');
+                connectionStatusContainer.classList.add('text-green-400');
+            } else {
+                connectionStatus.textContent = "No Server";
+                connectionStatusContainer.title = "No Mastodon server configured";
+                connectionIcon.textContent = '❌'; // Cross mark
+                connectionStatusContainer.classList.remove('text-green-400');
+                connectionStatusContainer.classList.add('text-red-400');
+            }
+        }
+
+        // --- Timeline / Channel Handling ---
+        function selectTimeline(timelineId, hashtag = null) {
+            const newTimeline = hashtag ? `#${hashtag}` : timelineId;
+            if (newTimeline === currentTimeline) {
+                 // If clicking the same timeline, maybe force a refresh?
+                 fetchTimeline(currentTimeline, true);
+                 return;
+            }
+
+            console.log("Selecting timeline:", newTimeline);
+            currentTimeline = newTimeline;
+            updateActiveTimelineHighlight();
+            updateChannelHeader();
+            // Fetch data for the new timeline
+            fetchTimeline(currentTimeline, true); // Force refresh when switching
+        }
+
+        function updateActiveTimelineHighlight() {
+            // Clear active class from all timeline items
+            document.querySelectorAll('#timelineList .channel-item, #channelList .channel-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            let activeElementId;
+            if (currentTimeline.startsWith('#')) {
+                activeElementId = `channel-${currentTimeline}`; // Hashtag channel ID
+            } else {
+                activeElementId = `timeline-${currentTimeline}`; // Standard timeline ID
+            }
+
+            const activeElement = document.getElementById(activeElementId);
+            if (activeElement) {
+                activeElement.classList.add('active');
+            } else {
+                // Fallback or default if element not found (e.g., after removing active hashtag)
+                const homeElement = document.getElementById('timeline-home');
+                if (homeElement) homeElement.classList.add('active');
+            }
+        }
+
+        function updateChannelHeader() {
+             let icon = '?';
+             let title = 'Unknown';
+
+             if (currentTimeline.startsWith('#')) {
+                 icon = '#'; // Hashtag icon
+                 title = currentTimeline; // e.g., #mastodon
+             } else {
+                 switch (currentTimeline) {
+                     case 'home': icon = '🏠'; title = 'Home'; break; // Emoji icons
+                     case 'local': icon = '🏢'; title = 'Local'; break;
+                     case 'federated': icon = '🌐'; title = 'Federated'; break;
+                     default: icon = '?'; title = 'Timeline';
+                 }
+             }
+             channelIcon.textContent = icon;
+             channelTitle.textContent = title;
+        }
+
+        // --- Hashtag Management ---
+        function updateHashtagListUI() {
+             if (!channelList) return;
+             // Clear existing hashtags
+             channelList.innerHTML = ''; // Clear all previous hashtag items
+
+             subscribedHashtags.forEach(tag => {
+                 const channelId = `channel-#${tag}`; // Consistent ID format
+                 const div = document.createElement('div');
+                 div.id = channelId;
+                 // Added group class for hover effect on delete button
+                 div.className = 'channel-item hashtag-channel flex justify-between items-center group';
+                 div.onclick = () => selectTimeline('hashtag', tag); // Use selectTimeline
+
+                 div.innerHTML = `
+                     <div class="flex items-center gap-2 overflow-hidden">
+                         <span class="text-lg">#</span> <span class="truncate">${tag}</span>
+                     </div>
+                     <button class="text-gray-500 hover:text-red-400 p-1 -mr-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                             onclick="event.stopPropagation(); removeHashtag('${tag}');"
+                             title="Remove #${tag}">
+                        <span>🗑️</span> </button>
+                 `;
+                 channelList.appendChild(div);
+             });
+             updateActiveTimelineHighlight(); // Re-apply active class if needed
+        }
+
+        function addHashtag() {
+             let tagName = addHashtagInput.value.trim().toLowerCase();
+             // Basic sanitization: remove leading #, spaces, etc. Keep it simple.
+             tagName = tagName.replace(/^#/, '').replace(/\s+/g, '');
+
+             if (!tagName) return;
+             if (subscribedHashtags.includes(tagName)) {
+                 showError(`Hashtag #${tagName} is already added.`);
+                 return;
+             }
+             subscribedHashtags.push(tagName);
+             subscribedHashtags.sort(); // Keep sorted alphabetically
+             saveHashtagsToStorage();
+             updateHashtagListUI();
+             addHashtagInput.value = '';
+             selectTimeline('hashtag', tagName); // Switch to the new channel
+        }
+
+        function removeHashtag(tagToRemove) {
+             subscribedHashtags = subscribedHashtags.filter(tag => tag !== tagToRemove);
+             saveHashtagsToStorage();
+             updateHashtagListUI();
+             // If the removed channel was the active one, switch back to home
+             if (currentTimeline === `#${tagToRemove}`) {
+                 selectTimeline('home');
+             }
+        }
+
+        // --- Fetching Timelines ---
+        async function fetchTimeline(timelineType, forceRefresh = false, fetchOlder = false) {
+            if (!mastodonServer || !mastodonAccessToken) {
+                messageContainer.innerHTML = '<div class="text-center text-gray-500 pt-10">Please login to view timelines.</div>';
+                return;
+            }
+
+            let endpoint = '';
+            let params = new URLSearchParams();
+            params.set('limit', '40'); // Fetch 40 statuses at a time
+
+            // Determine endpoint based on type
+            if (timelineType.startsWith('#')) {
+                const hashtag = timelineType.substring(1);
+                endpoint = `timelines/tag/${encodeURIComponent(hashtag)}`;
+            } else {
+                switch (timelineType) {
+                    case 'home': endpoint = 'timelines/home'; break;
+                    case 'local': endpoint = 'timelines/public?local=true'; break;
+                    case 'federated': endpoint = 'timelines/public'; break;
+                    default:
+                        showError(`Unknown timeline type: ${timelineType}`);
+                        return;
+                }
+            }
+
+            // Handle pagination
+            if (fetchOlder && oldestStatusId) {
+                 params.set('max_id', oldestStatusId);
+                 console.log(`Fetching older statuses (max_id: ${oldestStatusId})...`);
+            } else if (forceRefresh && newestStatusId) {
+                // When refreshing, fetch statuses newer than the newest we have
+                params.set('since_id', newestStatusId);
+                console.log(`Refreshing timeline (since_id: ${newestStatusId})...`);
+            } else if (!forceRefresh && !fetchOlder) {
+                 // Initial load or standard refresh (no specific ID)
+                 console.log(`Fetching initial/standard timeline: ${timelineType}`);
+                 oldestStatusId = null; // Reset pagination for new timeline load
+                 newestStatusId = null;
+            }
+
+            // Add params to endpoint string if they exist
+            const queryString = params.toString();
+            if (queryString) {
+                endpoint += (endpoint.includes('?') ? '&' : '?') + queryString;
+            }
+
+
+            // Show loading indicator only on initial load/refresh
+            if (forceRefresh || !timelineCache.has(timelineType)) {
+                 messageContainer.innerHTML = `<div class="text-center text-gray-500 pt-10 loading-messages">Loading ${timelineType}...</div>`;
+            } 
+
+            try {
+                const statuses = await mastodonApiRequest(endpoint);
+
+                if (!statuses && !fetchOlder && !forceRefresh) {
+                    // Handle case where API returns null/undefined unexpectedly on initial load
+                    messageContainer.innerHTML = '<div class="text-center text-gray-500 pt-10">No statuses found or error fetching timeline.</div>';
+                    timelineCache.set(timelineType, []); // Set empty cache
+                    return;
+                }
+
+                if (statuses && statuses.length > 0) {
+                    console.log(`Fetched ${statuses.length} statuses for ${timelineType}`);
+                    processAndRenderStatuses(statuses, timelineType, forceRefresh, fetchOlder);
+                } else if (fetchOlder) {
+                    showError("No older statuses found.", true);
+                    // Maybe add a marker indicating end of timeline?
+                } else if (forceRefresh) {
+                     showError("No new statuses.", true);
+                     // Remove loading message if it's still there
+                     const loadingMsg = messageContainer.querySelector('.loading-messages');
+                     if (loadingMsg) loadingMsg.remove();
+                     if (!timelineCache.has(timelineType) || timelineCache.get(timelineType).length === 0) {
+                         messageContainer.innerHTML = '<div class="text-center text-gray-500 pt-10">Timeline is empty.</div>';
+                     }
+                } else {
+                    // Initial load resulted in empty timeline
+                    messageContainer.innerHTML = '<div class="text-center text-gray-500 pt-10">Timeline is empty.</div>';
+                    timelineCache.set(timelineType, []);
+                }
+
+            } catch (error) {
+                showError(`Failed to fetch timeline: ${error.message}`);
+                // Clear loading message on error
+                const loadingMsg = messageContainer.querySelector('.loading-messages');
+                if (loadingMsg) loadingMsg.remove();
+                 // Show error in container if it's empty
+                 if (!messageContainer.hasChildNodes() || messageContainer.textContent.trim() === '') {
+                    messageContainer.innerHTML = `<div class="text-center text-red-400 pt-10">Error loading timeline: ${error.message}</div>`;
+                 }
+            } finally {
+            }
+        }
+
+        function processAndRenderStatuses(newStatuses, timelineType, isRefresh, isAppendingOlder) {
+            // Cache accounts from the fetched statuses
+            newStatuses.forEach(status => {
+                if (status.account && !accountCache.has(status.account.id)) {
+                    accountCache.set(status.account.id, status.account);
+                }
+                // Also cache reblogged accounts if present
+                if (status.reblog && status.reblog.account && !accountCache.has(status.reblog.account.id)) {
+                     accountCache.set(status.reblog.account.id, status.reblog.account);
+                }
+            });
+
+            let currentStatuses = timelineCache.get(timelineType) || [];
+            let combinedStatuses;
+
+            if (isAppendingOlder) {
+                // Append new (older) statuses to the end
+                combinedStatuses = [...currentStatuses, ...newStatuses];
+            } else if (isRefresh) {
+                // Prepend new (newer) statuses to the beginning, avoiding duplicates
+                const existingIds = new Set(currentStatuses.map(s => s.id));
+                const uniqueNewStatuses = newStatuses.filter(s => !existingIds.has(s.id));
+                combinedStatuses = [...uniqueNewStatuses, ...currentStatuses];
+            } else {
+                // Initial load, replace cache
+                combinedStatuses = newStatuses;
+            }
+
+            // Sort by creation date descending (Mastodon API usually returns sorted, but good practice)
+            // Use ID comparison for more reliable sorting than date strings
+            combinedStatuses.sort((a, b) => b.id.localeCompare(a.id));
+
+            // Limit cache size? (Optional)
+            // if (combinedStatuses.length > 200) {
+            //     combinedStatuses = combinedStatuses.slice(0, 200);
+            // }
+
+            timelineCache.set(timelineType, combinedStatuses);
+
+            // Render the full combined list
+            renderTimeline(combinedStatuses, isAppendingOlder);
+        }
+        
+        function renderTimeline(statuses, isAppending) {
+             if (!isAppending) {
+                 messageContainer.innerHTML = ''; // Clear container for full refresh/initial load
+             }
+
+             if (!statuses || statuses.length === 0) {
+                 if (!isAppending) { // Only show if not appending to existing content
+                    messageContainer.innerHTML = '<div class="text-center text-gray-500 pt-10">Timeline is empty.</div>';
+                 }
+                 return;
+             }
+
+             // Remove loading message if it exists
+             const loadingMsg = messageContainer.querySelector('.loading-messages');
+             if (loadingMsg) loadingMsg.remove();
+
+             const fragment = document.createDocumentFragment();
+             statuses.forEach(status => {
+                 // Avoid rendering duplicates if somehow they get through processing
+                 if (!isAppending && document.getElementById(`status-${status.id}`)) return;
+                 if (isAppending && document.getElementById(`status-${status.id}`)) return;
+
+                 fragment.appendChild(createStatusElement(status));
+             });
+
+             const shouldScrollToBottom = !isAppending && messageContainer.scrollTop >= messageContainer.scrollHeight - messageContainer.clientHeight - 200;
+              const oldScrollHeight = messageContainer.scrollHeight; // Store scroll height before adding new elements
+
+             if (isAppending) {
+                 messageContainer.prepend(fragment);
+             } else {
+                 // Prepending newer messages or full refresh
+                 const firstChild = messageContainer.firstChild; 
+                 messageContainer.insertBefore(fragment, firstChild);
+                 // Try to maintain scroll position when prepending
+                 const newScrollHeight = messageContainer.scrollHeight;
+                 messageContainer.scrollTop += (newScrollHeight - oldScrollHeight);
+             }
+
+             // Add "Load More" button if we might have older statuses
+             //addLoadMoreButton(statuses.length > 0 && oldestStatusId, isAppending);
+
+
+             // Scroll to bottom only on initial load/refresh if user was near bottom
+             // if (shouldScrollToBottom) {
+             //     messageContainer.scrollTop = messageContainer.scrollHeight;
+             // }
+        }
+
+        function createStatusElement(status) {
+            const isReblog = !!status.reblog;
+            const originalStatus = isReblog ? status.reblog : status;
+            const author = originalStatus.account;
+            const reblogger = isReblog ? status.account : null;
+
+            if (!author) {
+                console.warn("Status missing account info:", originalStatus.id);
+                return document.createElement('div'); // Return empty div to avoid errors
+            }
+
+            const statusId = `status-${originalStatus.id}`; // Use original status ID even for reblogs
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message flex p-3 rounded-md hover:bg-[#1f112e]'; // Base class
+            messageDiv.id = statusId;
+            messageDiv.dataset.statusId = originalStatus.id;
+            messageDiv.dataset.accountId = author.id;
+            // Add reblog info if applicable
+            if (isReblog) {
+                 messageDiv.dataset.reblogAccountId = reblogger.id;
+                 messageDiv.dataset.reblogStatusId = status.id; // The ID of the reblog itself
+            }
+
+            const avatarUrl = author.avatar_static || `https://placehold.co/40x40/9147ff/ffffff?text=${(author.username || '?').substring(0, 1)}`;
+            const displayName = author.display_name || author.username;
+            const accountHandle = `@${author.acct}`; // Full handle like @user@domain.social
+
+            const timestamp = new Date(originalStatus.created_at);
+            const formattedTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const formattedDate = timestamp.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            const fullTimestamp = timestamp.toLocaleString();
+
+            // --- Content Sanitization ---
+            // Mastodon content is HTML. Use DOMPurify if available, otherwise basic text conversion.
+            // For simplicity in this single file, we'll use textContent to avoid XSS,
+            // acknowledging that it strips all formatting.
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = originalStatus.content; // Let browser parse HTML
+            const safeContent = tempDiv.textContent || ""; // Extract text content
+
+            // --- Reblog Header ---
+            let reblogHeader = '';
+            if (isReblog && reblogger) {
+                reblogHeader = `
+                    <div class="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                        <span>?</span> <span>Reblogged by ${reblogger.display_name || reblogger.username}</span>
+                    </div>
+                `;
+            }
+
+            // --- Media Attachments ---
+            let mediaHtml = '';
+            if (originalStatus.media_attachments && originalStatus.media_attachments.length > 0) {
+                mediaHtml = '<div class="mt-2 flex flex-wrap gap-2">';
+                originalStatus.media_attachments.forEach(att => {
+                    if (att.type === 'image' && att.preview_url) {
+                        mediaHtml += `
+                            <a href="${att.url || att.remote_url}" target="_blank" rel="noopener noreferrer" class="block">
+                                <img src="${att.preview_url}" alt="${att.description || 'Image attachment'}" class="max-h-40 max-w-full rounded object-cover border border-gray-600">
+                            </a>`;
+                    } else if (att.type === 'video' && att.preview_url) {
+                         mediaHtml += `
+                            <a href="${att.url || att.remote_url}" target="_blank" rel="noopener noreferrer" class="block relative">
+                                <img src="${att.preview_url}" alt="${att.description || 'Video attachment'}" class="max-h-40 max-w-full rounded object-cover border border-gray-600">
+                                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                                     <span class="text-white text-4xl">▶️</span> </div>
+                            </a>`;
+                    }
+                    // Add handling for other types like audio, gifv if needed
+                });
+                mediaHtml += '</div>';
+            }
+
+            // --- Poll ---
+            let pollHtml = '';
+            if (originalStatus.poll) {
+                const poll = originalStatus.poll;
+                pollHtml = '<div class="mt-2 border border-gray-600 rounded p-2 space-y-1">';
+                poll.options.forEach(option => {
+                    pollHtml += `<div class="text-sm text-gray-300">${option.title} (${option.votes_count || 0} votes)</div>`;
+                });
+                pollHtml += `<div class="text-xs text-gray-500 pt-1">${poll.votes_count} total votes - ${poll.expired ? 'Expired' : 'Expires ' + new Date(poll.expires_at).toLocaleTimeString()}</div>`;
+                pollHtml += '</div>';
+            }
+
+            // --- Final HTML Structure ---
+            messageDiv.innerHTML = `
+                ${reblogHeader}
+                <div class="flex"> <div class="flex-shrink-0 mr-3">
+                        <img src="${avatarUrl}" alt="${displayName}" class="avatar-img w-10 h-10 rounded-full object-cover avatar" onerror="this.onerror=null; this.src='https://placehold.co/40x40/9147ff/ffffff?text=?';">
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <div class="flex items-baseline space-x-2">
+                            <span class="author-name font-semibold text-white hover:underline cursor-pointer truncate" title="${accountHandle}">${displayName}</span>
+                            <span class="text-xs text-gray-400 flex-shrink-0" title="${fullTimestamp}">
+                                ${formattedDate} ${formattedTime}
+                                <a href="${originalStatus.url}" target="_blank" rel="noopener noreferrer" title="View on server" class="ml-1 text-gray-500 hover:text-blue-400">🔗</a>
+                            </span>
+                        </div>
+                        <div class="message-content text-gray-200 mt-1 break-words whitespace-pre-wrap">${safeContent}</div>
+                        ${mediaHtml}
+                        ${pollHtml}
+                        <div class="mt-1 text-xs text-gray-500 flex space-x-3">
+                            <button class="like-button text-gray-500 hover:text-yellow-400 p-1 flex items-center" data-status-id="${originalStatus.id}">⭐ <span class="ml-1">${originalStatus.favourites_count || 0}</span></button>
+                            <button class="repost-button text-gray-500 hover:text-green-400 p-1 flex items-center" data-status-id="${originalStatus.id}">🔁 <span class="ml-1">${originalStatus.reblogs_count || 0}</span></button>
+                            <button class="reply-button text-gray-500 hover:text-blue-400 p-1 flex items-center" data-status-id="${originalStatus.id}">↩️ <span class="ml-1">Reply</span></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            return messageDiv;
+        }
+
+
+        // --- Sending Posts ---
+        // --- Like/Repost ---
+        messageContainer.addEventListener('click', async (event) => {
+            const target = event.target;
+            const statusId = target.closest('[data-status-id]')?.dataset.statusId;
+
+            if (!statusId) return; // Not a status interaction
+            const statusElement = target.closest('.message');
+
+            if (target.closest('.repost-button')) {
+                // Repost button clicked
+                try {
+                    await repostStatus(statusId);
+                    // Update UI or refresh timeline
+                    showError("Reposted successfully!", true);
+                    setTimeout(() => fetchTimeline(currentTimeline, true), 1000); // Refresh after 1 sec delay
+                } catch (error) {
+                    showError(`Failed to repost: ${error.message}`);
+                }
+            } else if (target.closest('.like-button')) {
+                // Like button clicked
+                try {
+                    await likeStatus(statusId);
+                    // Update UI or refresh timeline
+                    showError("Liked successfully!", true);
+                    setTimeout(() => fetchTimeline(currentTimeline, true), 1000); // Refresh after 1 sec delay
+                } catch (error) {
+                    showError(`Failed to like: ${error.message}`);
+                }
+            } else if (target.closest('.reply-button')) {
+                if (statusElement) {
+                    replyToStatus(statusElement);
+                }
+            }
+        });
+
+        async function repostStatus(statusId) {
+            if (!statusId) return;
+            try {
+                await mastodonApiRequest(`statuses/${statusId}/reblog`, 'POST');
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        async function likeStatus(statusId) {
+            if (!statusId) return;
+            try {
+                await mastodonApiRequest(`statuses/${statusId}/favourite`, 'POST');
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        function replyToStatus(statusElement) {
+            const replyToStatusId = statusElement.dataset.statusId;
+            const replyToAccountId = statusElement.dataset.accountId;
+            const account = accountCache.get(replyToAccountId);
+
+            if (!replyToStatusId || !account) {
+                console.error("Missing statusId or accountId:", { replyToStatusId, replyToAccountId });
+                console.log("Account Cache:", accountCache);
+                showError("Could not find status or account to reply to.");
+                return;
+            }
+
+            const replyToHandle = `@${account.acct}`;
+            messageInput.value = `${replyToHandle} `; // Pre-fill with handle
+            messageInput.dataset.replyToStatusId = replyToStatusId; // Store status ID for reply
+            messageInput.focus();
+        }
+
+        async function sendPost() {
+            let content = messageInput.value.trim();
+            if (!content) {
+                showError("Message content is empty.");
+                return;
+            }
+            if (!mastodonUserInfo || !mastodonAccessToken) {
+                showError("Please log in to post.");
+                return;
+            }
+
+            // Check if it's a reply
+            const replyToStatusId = messageInput.dataset.replyToStatusId;
+
+            sendBtn.disabled = true;
+            sendBtn.querySelector('span:first-child').textContent = '⏳'; // Update icon part
+            sendBtn.querySelector('span:last-child').textContent = 'Sending...'; // Update text part
+
+            const payload = {
+                status: content,
+                // in_reply_to_id: replyToStatusId, // If replying to a status
+                // visibility: 'public', // TODO: Add visibility options? Default is public/follower based on server setting
+            };
+
+            // Add hashtag context if posting to a hashtag timeline?
+            if (replyToStatusId) {
+                payload.in_reply_to_id = replyToStatusId;
+            }
+
+            // Mastodon doesn't directly support this like Nostr tags.
+            // Hashtags in the content (#tag) are automatically linked.
+
+            try {
+                const postedStatus = await mastodonApiRequest('statuses', 'POST', payload);
+                console.log("Post successful:", postedStatus);
+                messageInput.value = ''; // Clear input
+                delete messageInput.dataset.replyToStatusId; // Clear after use
+                showError("Status posted successfully!", true);
+                // Refresh the current timeline to show the new post
+                // Debounce this? Might post multiple times quickly.
+                setTimeout(() => fetchTimeline(currentTimeline, true), 1000); // Refresh after 1 sec delay
+
+            } catch (error) {
+                console.error("Failed to send post:", error);
+                showError(`Failed to send: ${error.message}`);
+            } finally {
+                 sendBtn.disabled = false;
+                 sendBtn.querySelector('span:first-child').textContent = '?'; // Reset icon
+                 sendBtn.querySelector('span:last-child').textContent = 'Send'; // Reset text
+                 messageInput.focus();
+            }
+        }
+
+
+        // --- Utility Functions ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+            // Optional: Adjust main content margin if sidebar overlaps on mobile?
+        }
+
+        // Basic HTML Sanitizer (Placeholder - consider DOMPurify for production)
+        // Using textContent in rendering is safer for now.
+        function sanitizeHTML(str) {
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML; // Basic entity conversion
+        }
+
+    </script>
+</body>
+</html>
